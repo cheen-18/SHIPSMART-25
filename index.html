@@ -32,7 +32,6 @@
         <a href="#track">Track</a>
         <a href="#quote">Quote</a>
         <a href="about.html">About Us</a>
-        <a href="contact.html">Contact</a>
         <a href="#signup">Sign Up</a>
         <button id="bookNowTop" class="btn btn-ghost">Book Now</button>
         <button id="dashboardBtn" class="btn btn-outline hidden">My Shipments</button>
@@ -299,9 +298,11 @@
         <a href="#contact">Contact</a>
       </div>
   
-      <div class="footer-copy">
-        © 2025 ShipSmart. All rights reserved.
-      </div>
+     <div class="footer-copy">
+  © 2025 ShipSmart. All rights reserved. |
+  <a href="privacy.html" class="privacy-link">Privacy Policy</a>
+</div>
+
     </div>
   </footer>
   
@@ -430,6 +431,22 @@
     </div>
   </div>
 </div>
+
+<!-- Privacy Policy Modal -->
+<div id="privacyModal" class="privacy-modal hidden">
+  <div class="privacy-box">
+    <h3>Data Privacy Notice</h3>
+    <p>
+      By using this website, you agree to our 
+      <a href="privacy.html" target="_blank">Privacy Policy</a> 
+      in compliance with the Data Privacy Act of 2012 (RA 10173).
+    </p>
+    <div class="privacy-buttons">
+      <button class="btn btn-outline" onclick="closePrivacyModal()">OK</button>
+    </div>
+  </div>
+</div>
+
 
 </body>
 </html>

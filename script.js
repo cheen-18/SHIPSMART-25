@@ -3090,3 +3090,21 @@ function setupAdminPage() {
 }
 
 console.log('ShipSmart script loaded successfully - Complete Enhanced Version');
+
+// ===============================
+// DATA PRIVACY NOTICE MODAL LOGIC
+// ===============================
+
+// Show the privacy modal only once per user
+window.addEventListener("load", () => {
+  const accepted = localStorage.getItem("privacyAccepted");
+  if (!accepted) {
+    document.getElementById("privacyModal").classList.remove("hidden");
+  }
+});
+
+// Function to close the modal and save consent
+function closePrivacyModal() {
+  document.getElementById("privacyModal").classList.add("hidden");
+  localStorage.setItem("privacyAccepted", "true");
+}
