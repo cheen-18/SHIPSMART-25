@@ -460,7 +460,7 @@ main {
 }
 
 .service-card {
-  background: white;
+  background: rgb(253, 25, 255);
   padding: 2.5rem 1.5rem;
   border-radius: 16px;
   text-align: center;
@@ -533,7 +533,7 @@ main {
 .track-grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 32px;
+  gap: 29px;
   align-items: start;
 }
 
@@ -1117,7 +1117,7 @@ main {
 /* Quote Section */
 .quote-card {
   background: #fff;
-  padding: 2.2rem 2.5rem;
+  padding: 2rem 2rem;
   border-radius: 18px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   max-width: 950px;
@@ -1128,7 +1128,7 @@ main {
 /* Spacing between sections inside card */
 .quote-card form {
   display: grid;
-  gap: 1.4rem;
+  gap: 1.2rem;
 }
 
 /* Fields */
@@ -5434,7 +5434,7 @@ main {
 
 .service-card {
   background: white;
-  padding: 2.5rem 1.5rem;
+  padding: 2rem 1rem;
   border-radius: 16px;
   text-align: center;
   box-shadow: var(--card-shadow);
@@ -6090,7 +6090,7 @@ main {
 /* Quote Section */
 .quote-card {
   background: #fff;
-  padding: 2.2rem 2.5rem;
+  padding: 2rem 2rem;
   border-radius: 18px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   max-width: 950px;
@@ -6101,7 +6101,7 @@ main {
 /* Spacing between sections inside card */
 .quote-card form {
   display: grid;
-  gap: 1.4rem;
+  gap: 1.2rem;
 }
 
 /* Fields */
