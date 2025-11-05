@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - ShipSmart</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Styles for the new shipment detail modal */
+    .detail-view-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .detail-view-grid div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .detail-view-grid label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-view-grid span {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--headings-color);
+      word-break: break-word;
+    }
+
+    /* Utility to make an item span both columns */
+    .grid-full-width {
+      grid-column: 1 / -1;
+    }
+
+    .detail-view-grid hr.grid-full-width {
+      border: none;
+      border-top: 1px solid var(--border-color);
+      margin: 0.5rem 0;
+    }
+
+    /* Style for the total cost */
+    #modalTotalCost {
+      color: var(--success);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    /* Ensure status badge has correct colors */
+    .detail-view-grid .status-badge {
+        font-size: 0.75rem; /* Matches your existing badge styles */
+        align-self: flex-start;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="admin-header">
+    <div class="container">
+      <h1><i class="fas fa-truck"></i> ShipSmart Admin Panel</h1>
+      <div id="admin-user-info">Logged in as: <span id="adminName">Loading...</span></div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    
+    <div class="admin-stats">
+      <div class="stat-card" id="stat-pending">
+        <div class="stat-number" id="stat-pending-num">0</div>
+        <div class="stat-label">Awaiting Payment Approval</div>
+      </div>
+      <div class="stat-card" id="stat-booked">
+        <div class="stat-number" id="stat-booked-num">0</div>
+        <div class="stat-label">Booked (COD & Paid)</div>
+      </div>
+      <div class="stat-card" id="stat-total">
+        <div class="stat-number" id="stat-total-num">0</div>
+        <div class="stat-label">Total Land Shipments Recorded</div>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Shipments Requiring Payment Verification</h2>
+
+    <div class="shipment-list-container">
+      <table id="adminTable" class="shipment-table">
+        <thead>
+          <tr>
+            <th>Tracking #</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Cost (₱)</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="shipmentTableBody">
+          <tr><td colspan="6" class="loading-state">Loading shipments...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <footer class="admin-footer minimized">
+    <button class="btn btn-outline" onclick="window.location.href='index.html'">
+      <i class="fas fa-home"></i> Main Site
+    </button>
+    <button class="btn btn-danger" onclick="adminLogout()">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </footer>
+
+  <div id="shipmentDetailsModal" class="modal-wrap hidden">
+    <div class="modal-card">
+      <button id="modalCloseBtn" class="modal-close">&times;</button>
+      <h3><i class="fas fa-shipping-fast"></i> Shipment Details</h3>
+      <div class="modal-subtitle">Full details for the selected shipment.</div>
+
+      <div class="detail-view-grid">
+        <div>
+          <label>Tracking Number</label>
+          <span id="modalTrackingNumber">---</span>
+        </div>
+        <div>
+          <label>Status</label>
+          <span id="modalStatus" class="status-badge">---</span>
+        </div>
+
+        <div>
+          <label>Origin</label>
+          <span id="modalOrigin">---</span>
+        </div>
+        <div>
+          <label>Destination</label>
+          <span id="modalDestination">---</span>
+        </div>
+        
+        <div class="grid-full-width">
+          <label>Sender</label>
+          <span id="modalSender">---</span>
+        </div>
+
+        <div class="grid-full-width">
+          <label>Recipient</label>
+          <span id="modalRecipient">---</span>
+        </div>
+        
+        <hr class="grid-full-width">
+
+        <div>
+          <label>Payment Status</label>
+          <span id="modalPaymentStatus">---</span>
+        </div>
+        <div>
+          <label>Total Cost</label>
+          <span id="modalTotalCost">---</span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+
+  <script>
+    // Firebase configuration (same as your main site)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWmXXvSRswvQBnAwrlOZprK-7H8xupjzM",
+      authDomain: "shipment-tracking-2f377.firebaseapp.com",
+      projectId: "shipment-tracking-2f377",
+      storageBucket: "shipment-tracking-2f377.firebasestorage.app",
+      messagingSenderId: "988485028683",
+      appId: "1:988485028683:web:32d0eb3b857d447e87f6ce",
+      measurementId: "G-FYQ7H10LNV",
+      databaseURL: "https://shipment-tracking-2f377-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    // Initialize Firebase
+    let auth, database;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      database = firebase.database();
+      console.log('Firebase initialized successfully in admin panel');
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+    }
+
+    // Global variable to track current shipment being updated
+    let currentTrackingNumber = null;
+
+    // Admin page protection and initialization
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Admin page loaded - checking authentication');
+      
+      auth.onAuthStateChanged(function(user) {
+        if (!user) {
+          // Not logged in - redirect to main site
+          console.log('No user found - redirecting to index');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        // Check if user is admin - wait for user data to load
+        database.ref('users/' + user.uid).once('value').then((snapshot) => {
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            if (userData.isAdmin !== true) {
+              // Not an admin - redirect to main site
+              console.log('User is not admin - redirecting to index');
+              alert('Access denied. Admin privileges required.');
+              window.location.href = 'index.html';
+            } else {
+              // Is admin - show admin name and initialize
+              console.log('Admin user confirmed - initializing admin panel');
+              document.getElementById('adminName').textContent = userData.name || user.email;
+              
+              // Clear redirect flag since we're now properly on admin page
+              sessionStorage.removeItem('adminRedirected');
+              
+              // Load admin data
+              loadShipmentsForAdmin();
+            }
+          } else {
+            // User data not found
+            console.log('User data not found - redirecting to index');
+            alert('User data not found.');
+            window.location.href = 'index.html';
+          }
+        }).catch(error => {
+          console.error('Admin check error:', error);
+          window.location.href = 'index.html';
+        });
+      });
+    });
+    
+    function loadShipmentsForAdmin() {
+      console.log('Loading shipments for admin...');
+      const tbody = document.getElementById('shipmentTableBody');
+      
+      // Show loading state
+      if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" class="loading-state">Loading shipments...</td></tr>';
+      }
+      
+      database.ref('shipments').once('value').then(snapshot => {
+          const shipments = [];
+          snapshot.forEach(childSnapshot => {
+              const shipment = childSnapshot.val();
+              shipment.key = childSnapshot.key;
+              shipments.push(shipment);
+          });
+          
+          console.log('Loaded shipments:', shipments.length);
+          updateAdminTable(shipments);
+      }).catch(error => {
+          console.error('Error loading shipments:', error);
+          if (tbody) {
+              if (error.code === 'PERMISSION_DENIED') {
+                  tbody.innerHTML = `
+                      <tr>
+                          <td colspan="6" class="empty-state">
+                              <i class="fas fa-lock" style="font-size: 2rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                              <p>Admin access denied by security rules.</p>
+                              <p class="small muted">Please update Firebase Security Rules to allow admin access.</p>
+                              <button class="btn btn-warning mt-2" onclick="loadShipmentsForAdmin()">
+                                  <i class="fas fa-redo"></i> Retry
+                              </button>
+                          </td>
+                      </tr>`;
+              } else {
+                  tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading shipments. Please try again.</td></tr>';
+              }
+          }
+      });
+    }
+    
+  function updateAdminTable(shipments) {
+    const tbody = document.getElementById('shipmentTableBody');
+    if (!tbody) return;
+    
+    // Show ALL shipments (no filtering)
+    const allShipments = shipments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Update stats
+    document.getElementById('stat-total-num').textContent = allShipments.length;
+    document.getElementById('stat-booked-num').textContent = allShipments.filter(s => 
+      s.status === 'booked' || s.paymentStatus === 'paid'
+    ).length;
+    
+    const pendingGCashPayments = allShipments.filter(s => 
+      s.paymentStatus === 'awaiting_admin_approval' && s.paymentMethod === 'gcash'
+    ).length;
+    
+    document.getElementById('stat-pending-num').textContent = pendingGCashPayments;
+    
+    if (allShipments.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No shipments found</td></tr>';
+      return;
+    }
+    
+    let html = '';
+    allShipments.forEach(shipment => {
+      const statusClass = shipment.paymentStatus === 'awaiting_admin_approval' ? 'status-warning' : 
+                          shipment.status === 'delivered' ? 'status-success' : 'status-info';
+      
+      const statusText = shipment.paymentStatus === 'awaiting_admin_approval' ? 'Awaiting Payment' :
+                        shipment.status === 'delivered' ? 'Delivered' :
+                        shipment.status || 'Unknown';
+      
+      const paymentMethod = shipment.paymentMethod ? 
+        (shipment.paymentMethod === 'cod' ? 'COD' : 
+         shipment.paymentMethod === 'gcash' ? 'GCash' :
+         shipment.paymentMethod.toUpperCase()) : 'N/A';
+      
+      const serviceType = shipment.serviceName || formatStatus(shipment.shippingMode);
+      
+      // GCash Reference Display - Show sender name and reference number
+      const gcashReferenceDisplay = shipment.paymentMethod === 'gcash' && shipment.gcashReference ? 
+        `<div class="gcash-reference-info">
+            <div class="reference-badge">
+              <i class="fas fa-hashtag"></i> Ref: ${shipment.gcashReference}
+            </div>
+            ${shipment.senderName ? `<div class="sender-name"><i class="fas fa-user"></i> ${shipment.senderName}</div>` : ''}
+            ${shipment.paymentSubmittedAt ? `<div class="submission-time"><i class="fas fa-clock"></i> ${new Date(shipment.paymentSubmittedAt).toLocaleString()}</div>` : ''}
+          </div>` : '';
+      
+      html += `
+      <tr>
+        <td>
+          <strong>${shipment.trackingNumber}</strong>
+          <div class="small muted">${serviceType}</div>
+          ${gcashReferenceDisplay}
+        </td>
+        <td><span class="${statusClass}">${statusText}</span></td>
+        <td>
+          ${paymentMethod}
+          ${shipment.paymentMethod === 'gcash' && shipment.gcashReference ? `
+            <div class="payment-details-small">
+              <div><small>Ref: ${shipment.gcashReference}</small></div>
+              ${shipment.senderName ? `<div><small>From: ${shipment.senderName}</small></div>` : ''}
+            </div>
+          ` : ''}
+        </td>
+        <td>₱${shipment.totalCost ? shipment.totalCost.toFixed(2) : (shipment.cost || 0).toFixed(2)}</td>
+        <td>${new Date(shipment.createdAt).toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-small btn-light btn-view-details"
+              data-tracking-number="${shipment.trackingNumber}"
+              data-status="${shipment.status || 'Unknown'}"
+              data-origin="${shipment.origin || 'N/A'}"
+              data-destination="${shipment.destination || 'N/A'}"
+              data-sender-name="${shipment.senderName || 'N/A'}"
+              data-recipient-name="${shipment.recipientName || 'N/A'}"
+              data-payment-status="${shipment.paymentStatus || 'N/A'}"
+              data-total-cost="${shipment.totalCost || shipment.cost || 0}">
+            <i class="fas fa-eye"></i> View
+          </button>
+          
+          ${shipment.paymentStatus === 'awaiting_admin_approval' && shipment.paymentMethod === 'gcash' ? `
+          <button class="btn btn-small btn-success" onclick="verifyGCashPayment('${shipment.trackingNumber}')">
+            <i class="fas fa-check"></i> Verify
+          </button>
+          ` : ''}
+          <button class="btn btn-small btn-warning" onclick="showStatusModal('${shipment.trackingNumber}')">
+            <i class="fas fa-edit"></i> Update
+          </button>
+        </td>
+      </tr>
+      `;
+    });
+    
+    tbody.innerHTML = html;
+  }
+ 
+    // Add this helper function if not exists
+  function formatStatus(status) {
+    return (status || '').split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  }
+    
+    function approvePayment(trackingNumber) {
+      if (confirm(`Approve payment for shipment ${trackingNumber}? This will mark the payment as verified and update the shipment status.`)) {
+        const updates = {
+          paymentStatus: 'paid',
+          status: 'booked',
+          updatedAt: new Date().toISOString()
+        };
+        
+        database.ref('shipments/' + trackingNumber).update(updates)
+          .then(() => {
+            alert('Payment approved successfully! Shipment status updated to "booked".');
+            loadShipmentsForAdmin(); // Refresh the table
+          })
+          .catch(error => {
+            console.error('Error approving payment:', error);
+            alert('Error approving payment: ' + error.message);
+          });
+      }
+    }
+
+    // GCash Payment Verification Functions for Admin Panel
+  function verifyGCashPayment(trackingNumber) {
+    database.ref('shipments/' + trackingNumber).once('value').then(snapshot => {
+        if (snapshot.exists()) {
+            const shipment = snapshot.val();
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-wrap';
+            modal.innerHTML = `
+                <div class="modal-card" style="max-width: 600px;">
+                    <button class="modal-close" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <h3>Verify GCash Payment</h3>
+                    <p class="modal-subtitle">Confirm this payment matches your GCash transactions</p>
+                    
+                    <div class="verification-details">
+                        <div class="verification-card">
+                            <h4>Payment Details to Verify:</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span class="label">Tracking Number:</span>
+                                    <span class="value">${shipment.trackingNumber}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Reference Number:</span>
+                                    <span class="value reference-highlight">${shipment.gcashReference}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Sender Name:</span>
+                                    <span class="value">${shipment.senderName || 'Not provided'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Amount Expected:</span>
+                                    <span class="value amount-highlight">₱${shipment.cost?.toFixed(2) || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">GCash Number:</span>
+                                    <span class="value">09617087048</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Submitted:</span>
+                                    <span class="value">${shipment.paymentSubmittedAt ? new Date(shipment.paymentSubmittedAt).toLocaleString() : 'Not available'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="verification-steps">
+                            <h4>Verification Steps:</h4>
+                            <ol class="steps-list">
+                                <li>Open your GCash merchant account (09617087048)</li>
+                                <li>Check transaction history</li>
+                                <li>Look for reference number: <strong>${shipment.gcashReference}</strong></li>
+                                <li>Verify sender name: <strong>${shipment.senderName || 'Check in GCash'}</strong></li>
+                                <li>Confirm amount: <strong>₱${shipment.cost?.toFixed(2) || 'N/A'}</strong></li>
+                            </ol>
+                        </div>
+                        
+                        <div class="verification-actions">
+                            <div class="verification-result">
+                                <label>Verification Result:</label>
+                                <div class="result-options">
+                              <button class="btn btn-danger" onclick="markPaymentAsInvalid('${trackingNumber}')">
+                             <i class="fas fa-times"></i> Not Found
+                          </button>
+                            <button class="btn btn-success" onclick="approveGCashPayment('${trackingNumber}')">
+                             <i class="fas fa-check"></i> Payment Verified
+                            </button>
+                          </div>
+                            </div>
+                        </div>
+                        
+                        <div class="verification-notes">
+                            <div class="note warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Important:</strong> Only approve if reference number and amount match exactly in your GCash transactions.
+                            </div>
+                            <div class="note info">
+                                <i class="fas fa-info-circle"></i>
+                                If payment is not found, ask customer to double-check their reference number.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+    }).catch(error => {
+        console.error('Error loading shipment for verification:', error);
+        alert('Error loading payment details');
+    });
+  }
+
+  async function approveGCashPayment(trackingNumber) {
+    if (confirm(`Approve GCash payment for ${trackingNumber}? This will mark the payment as verified and update shipment status.`)) {
+        try {
+            const updates = {
+                paymentStatus: 'paid',
+                status: 'booked',
+                paymentVerifiedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            await database.ref('shipments/' + trackingNumber).update(updates);
+            
+            alert('Payment verified successfully! Shipment status updated to "booked".');
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.modal-wrap');
+            if (modal) modal.remove();
+            
+            loadShipmentsForAdmin();
+            
+        } catch (error) {
+            console.error('Error approving payment:', error);
+            alert('Error approving payment: ' + error.message);
+        }
+    }
+  }
+
+  async function markPaymentAsInvalid(trackingNumber) {
+    const newReference = prompt('Payment not found. Please ask customer for correct reference number:');
+
+    if (newReference) {
+        try {
+            await database.ref('shipments/' + trackingNumber).update({
+                gcashReference: newReference,
+                updatedAt: new Date().toISOString()
+            });
+            
+            alert('Reference number updated. Please verify again.');
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.modal-wrap');
+            if (modal) modal.remove();
+            
+            loadShipmentsForAdmin();
+            
+        } catch (error) {
+            console.error('Error updating reference:', error);
+            alert('Error updating reference: ' + error.message);
+        }
+    }
+  }
+    
+    function showStatusModal(trackingNumber) {
+      currentTrackingNumber = trackingNumber;
+      
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'status-modal';
+      modal.innerHTML = `
+        <div class="status-modal-content">
+          <h3>Update Status for ${trackingNumber}</h3>
+          <select class="status-select" id="statusSelect">
+            <option value="">Select new status</option>
+            <option value="booked">Booked</option>
+            <option value="picked_up">Picked Up</option>
+            <option value="in_transit">In Transit</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeStatusModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="updateShipmentStatus()">Update Status</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+    }
+    
+    function closeStatusModal() {
+      const modal = document.querySelector('.status-modal');
+      if (modal) {
+        modal.remove();
+      }
+      currentTrackingNumber = null;
+    }
+    
+    function updateShipmentStatus() {
+      const statusSelect = document.getElementById('statusSelect');
+      const newStatus = statusSelect.value;
+      
+      if (!newStatus) {
+        alert('Please select a status');
+        return;
+      }
+      
+      if (!currentTrackingNumber) {
+        alert('Error: No shipment selected');
+        return;
+      }
+      
+      const updates = {
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // If marking as delivered, add deliveredAt timestamp
+      if (newStatus === 'delivered') {
+        updates.deliveredAt = new Date().toISOString();
+      }
+      
+      database.ref('shipments/' + currentTrackingNumber).update(updates)
+        .then(() => {
+          alert('Shipment status updated successfully to: ' + newStatus);
+          closeStatusModal();
+          loadShipmentsForAdmin(); // Refresh the table
+        })
+        .catch(error => {
+          console.error('Error updating shipment status:', error);
+          alert('Error updating status: ' + error.message);
+        });
+    }
+    
+    function adminLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        auth.signOut().then(() => {
+          console.log('Admin logged out');
+          window.location.href = 'index.html';
+        }).catch(error => {
+          console.error('Logout error:', error);
+          window.location.href = 'index.html';
+        });
+      }
+    }
+
+    /*
+      ==================================================
+      NEW JAVASCRIPT: Added the listener for the "View" modal
+      ==================================================
+    */
+    document.addEventListener('DOMContentLoaded', () => {
+      const shipmentModal = document.getElementById('shipmentDetailsModal');
+      const closeModalBtn = document.getElementById('modalCloseBtn');
+      // Re-select tableBody here for this specific listener
+      const tableBody = document.getElementById('shipmentTableBody'); 
+
+      if (tableBody) {
+        // 1. LISTEN FOR CLICKS ON THE "VIEW" BUTTONS
+        tableBody.addEventListener('click', (event) => {
+          // Check if the clicked element has the correct class
+          const viewButton = event.target.closest('.btn-view-details');
+
+          if (viewButton) {
+            console.log("View button clicked!"); // For debugging
+            const data = viewButton.dataset;
+
+            // Populate the modal
+            document.getElementById('modalTrackingNumber').textContent = data.trackingNumber;
+            document.getElementById('modalOrigin').textContent = data.origin;
+            document.getElementById('modalDestination').textContent = data.destination;
+            document.getElementById('modalSender').textContent = data.senderName;
+            document.getElementById('modalRecipient').textContent = data.recipientName;
+            document.getElementById('modalPaymentStatus').textContent = formatStatus(data.paymentStatus);
+            
+            // Format cost as currency
+            const cost = parseFloat(data.totalCost) || 0;
+            document.getElementById('modalTotalCost').textContent = `₱${cost.toFixed(2)}`;
+
+            // Handle the status badge
+            const statusSpan = document.getElementById('modalStatus');
+            statusSpan.textContent = formatStatus(data.status);
+            statusSpan.className = 'status-badge'; // Reset classes
+            statusSpan.classList.add(`status-${data.status}`);
+            
+            // Show the modal
+            shipmentModal.classList.remove('hidden');
+          }
+        });
+      } else {
+        console.error('shipmentTableBody not found for modal listener.');
+      }
+
+      // 2. CLOSE THE MODAL WITH THE 'X' BUTTON
+      if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+          shipmentModal.classList.add('hidden');
+        });
+      }
+
+      // 3. CLOSE MODAL BY CLICKING BACKGROUND
+      if (shipmentModal) {
+        shipmentModal.addEventListener('click', (event) => {
+          if (event.target === shipmentModal) {
+            shipmentModal.classList.add('hidden');
+          }
+        });
+      }
+    });
+
+
+    // Refresh data every 30 seconds to keep admin panel updated
+    setInterval(() => {
+      if (auth.currentUser) {
+        loadShipmentsForAdmin();
+      }
+    }, 30000);
+  </script>
+  <script>
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 10) {
+    document.body.classList.add('scrolled');
+  } else {
+    document.body.classList.remove('scrolled');
+  }
+});
+</script>
+
+</body>
+</html>

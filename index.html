@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShipSmart — Dashboard</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="shiptracking_logo.png">
+   
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
+  
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img src="shiptracking_logo.png" alt="logo" class="logo">
+        <span class="brand-name">ShipSmart</span>
+      </div>
+
+      <nav class="main-nav">
+        <a href="#home">Home</a>
+        <a href="#services">Services</a>
+        <a href="#weather">Weather</a>
+        <a href="#track">Track</a>
+        <a href="#quote">Quote</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <a href="#signup">Sign Up</a>
+        <button id="bookNowTop" class="btn btn-ghost">Book Now</button>
+        <button id="dashboardBtn" class="btn btn-outline hidden">My Shipments</button>
+        <button id="loginBtn" class="btn btn-outline">Login</button>
+        <button id="logoutBtn" class="btn btn-danger hidden">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <section id="home" class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container hero-inner">
+      <div class="hero-left">
+        <h1>ShipSmart — Smooth, smart logistics</h1>
+        <p class="lead">Fast. Secure. Transparent. Nationwide delivery solutions with instant quotes and tracking.</p>
+        <div class="hero-ctas">
+          <button id="bookNowHero" class="btn btn-primary">Book Shipment</button>
+          <a href="#quote" class="btn btn-secondary">Get Quote</a>
+        </div>
+      </div>
+      <div class="hero-illustration">
+        <img src="shiptracking_logo.png" alt="logistics illustration">
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="section">
+    <div class="container">
+      <h2 class="section-title">Our Services</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <i class="fa-solid fa-truck-fast service-icon"></i>
+          <h3>Land Transport</h3>
+          <p>Door-to-door distribution across islands.</p>
+        </div>
+  
+        <div class="service-card">
+          <i class="fa-solid fa-truck-moving service-icon"></i>
+          <h3>Cargo & Bulk Transport</h3>
+          <p>Ideal for pallets, equipment, and large-volume shipments.</p>
+        </div>
+  
+        <div class="service-card">
+          <i class="fa-solid fa-motorcycle service-icon"></i>
+          <h3>Same-Day Courier</h3>
+          <p>Fast intra-city express delivery for small parcels.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Weather Forecast Section -->
+<section id="weather" class="section section-alt">
+  <div class="container">
+    <h2 class="section-title"><i class="fas fa-cloud-sun"></i> Weather Forecast</h2>
+    <p class="section-subtitle">Real-time weather updates for your shipment locations</p>
+    
+    <div class="weather-controls">
+      <div class="weather-input-group">
+        <div class="field">
+          <label for="originCity"><i class="fas fa-map-marker-alt"></i> Origin City</label>
+          <input type="text" id="originCity" placeholder="Enter origin city (e.g., Manila)" value="Manila">
+        </div>
+        <div class="field">
+          <label for="destinationCity"><i class="fas fa-location-dot"></i> Destination City</label>
+          <input type="text" id="destinationCity" placeholder="Enter destination city (e.g., Cainta)" value="Cainta, Rizal">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="updateWeatherBtn">
+        <i class="fas fa-sync-alt"></i> Update Weather
+      </button>
+    </div>
+
+    <div class="weather-alert-container" id="weatherAlertContainer"></div>
+
+    <div class="weather-cards-container">
+      <div class="weather-cards" id="weatherCards">
+        <div class="loading-weather">
+          <i class="fas fa-spinner fa-spin"></i> Loading weather data...
+        </div>
+      </div>
+    </div>
+
+    <div class="weather-disclaimer">
+      <i class="fas fa-info-circle"></i> Weather data provided by OpenWeatherMap • Updates every 10 minutes
+    </div>
+  </div>
+</section>
+
+
+<!-- Shipment Tracking Section - Using your existing structure -->
+<section id="track" class="section">
+  <div class="container">
+    <h2 class="section-title"><i class="fas fa-location-arrow"></i> Track Your Shipment</h2>
+    <p class="section-subtitle">Enter your tracking number to get real-time updates on your shipment</p>
+    
+    <div class="track-grid">
+      <div class="track-left">
+        <div class="tracking-card card">
+          <div class="track-input-wrap">
+            <label for="trackCode"><i class="fas fa-barcode"></i> Tracking Number</label>
+            <input type="text" id="trackCode" placeholder="Enter your tracking number (e.g., SS-2024-0001)" class="form-input">
+          </div>
+          
+          <div class="track-hint">
+            <p>Find your tracking number in your booking confirmation email</p>
+          </div>
+          
+          <button class="btn btn-primary btn-glow" onclick="trackShipment()">
+            <i class="fas fa-search"></i> Track Shipment
+          </button>
+          
+          <!-- ETA Display -->
+          <div id="eta" class="eta-display hidden"></div>
+          
+          <!-- Tracking Results -->
+          <div id="trackingResult" class="tracking-result">
+            <!-- Your existing tracking display will populate here -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tracking-help">
+      <h4><i class="fas fa-question-circle"></i> Need Help?</h4>
+      <p>If you're having trouble tracking your shipment or have questions about your delivery, please contact our support team.</p>
+    </div>
+  </div>
+</section>
+  
+  <section id="quote" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Quote Calculator</h2>
+  
+      <div class="quote-card card">
+        <form id="quoteForm" onsubmit="event.preventDefault(); computeQuote();">
+  
+          <!-- Box Size + Quantity -->
+          <div class="grid-2">
+            <div class="field">
+              <label><i class="fa-solid fa-box"></i> Box Size</label>
+              <select id="boxSize">
+                <option value="small">Small — 30×30×30 cm</option>
+                <option value="medium">Medium — 50×40×40 cm</option>
+                <option value="large">Large — 80×60×50 cm</option>
+                <option value="xl">XL — 120×80×60 cm</option>
+                <option value="xxl">XXL — Pallet</option>
+              </select>
+            </div>
+  
+            <div class="field">
+              <label><i class="fa-solid fa-layer-group"></i> Quantity</label>
+              <input id="quantity" type="number" min="1" value="1">
+            </div>
+          </div>
+  
+          <!-- Weight + Packaging -->
+          <div class="grid-2">
+            <div class="field">
+              <label><i class="fa-solid fa-weight-scale"></i> Weight per item (kg)</label>
+              <input id="weight" type="number" min="0" step="0.1" placeholder="e.g. 2.5">
+            </div>
+  
+            <div class="field">
+              <label><i class="fa-solid fa-truck-ramp-box"></i> Packaging</label>
+              <select id="packaging">
+                <option value="provider">ShipSmart provides box</option>
+                <option value="customer">Customer provides packaging</option>
+              </select>
+            </div>
+          </div>
+  
+          <!-- Service Type + Declared Value -->
+          <div class="grid-2">
+            <div class="field">
+              <label><i class="fa-solid fa-truck-fast"></i> Service Type</label>
+              <select id="serviceType">
+                <option value="" disabled selected>Select service</option>
+                <option value="land">🚛 Land Transport Cargo</option>
+                <option value="bulk">📦 Bulk Transport</option>
+                <option value="courier">⚡ Same-Day Courier</option>
+              </select>
+            </div>
+  
+            <div class="field">
+              <label><i class="fa-solid fa-shield-halved"></i> Declared Value (₱)</label>
+              <input id="declaredValue" type="number" min="0" placeholder="optional">
+            </div>
+          </div>
+  
+          <!-- Pickup + Drop-off -->
+          <div class="grid-2">
+            <div class="field">
+              <label><i class="fa-solid fa-map-marker-alt"></i> Pickup Point</label>
+              <input id="pickup" type="text" placeholder="Barangay/Town/City">
+            </div>
+  
+            <div class="field">
+              <label><i class="fa-solid fa-location-dot"></i> Drop-off Point</label>
+              <input id="dropoff" type="text" placeholder="Barangay/Town/City">
+            </div>
+          </div>
+  
+          <!-- Dimensions + Submit -->
+          <div class="grid-2 align-end">
+            <div class="field">
+              <label><i class="fa-solid fa-ruler-combined"></i> Dimensions (optional)</label>
+              <input id="dimensions" type="text" placeholder="L×W×H cm (optional)">
+            </div>
+  
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-primary">Compute Quote</button>
+            </div>
+          </div>
+        </form>
+  
+        <div id="quoteOutput" class="quote-output hidden">
+          <h3>Quote Summary</h3>
+          <div id="breakdown"></div>
+          <div class="quote-total" id="quoteTotal"></div>
+          <div class="quote-actions">
+            <button class="btn btn-primary" id="proceedBooking">Proceed to Book</button>
+            <button class="btn btn-outline" 
+        style="border-color: #dc3545; color: #dc3545; background-color: white;"
+        onclick="document.getElementById('quoteOutput').classList.add('hidden')">
+  Cancel
+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="signup" class="section">
+    <div class="container">
+      <h2 class="section-title">Create Account</h2>
+      <div class="signup-card card">
+        <label>Full name</label>
+        <input id="su_name" type="text" placeholder="Juan Dela Cruz">
+        <label>Email</label>
+        <input id="su_email" type="email" placeholder="you@example.com">
+        <label>Password</label>
+        <input id="su_pass" type="password" placeholder="choose a secure password">
+        <div class="row">
+          <button class="btn btn-primary" onclick="signupUser()">Register</button>
+          <button class="btn btn-scroll-outline" onclick="scrollToTop()">Back to Top</button>
+        </div>
+        <p id="signupMsg" class="muted"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <h3>ShipSmart</h3>
+        <p><a href="mailto:info@shipsmart.ph">info@shipsmart.ph</a> • <a href="tel:+639123456789">+63 912 345 6789</a></p>
+      </div>
+  
+      <div class="footer-links">
+        <a href="#track">Track Shipment</a>
+        <a href="#quote">Get Quote</a>
+        <a href="#contact">Contact</a>
+      </div>
+  
+      <div class="footer-copy">
+        © 2025 ShipSmart. All rights reserved.
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Enhanced Login Modal -->
+<div id="loginModal" class="modal-wrap hidden">
+  <div class="modal-card">
+    <button id="modalClose" class="modal-close">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <h3>Welcome Back</h3>
+    <p class="modal-subtitle">Sign in to your ShipSmart account</p>
+    
+    <div class="form-group">
+      <label for="li_email">Email Address</label>
+      <div class="input-wrapper">
+        <input id="li_email" type="email" placeholder="your.email@example.com">
+        <i class="fas fa-envelope input-icon"></i>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="li_pass">Password</label>
+      <div class="input-wrapper">
+        <input id="li_pass" type="password" placeholder="Enter your password">
+        <i class="fas fa-lock input-icon"></i>
+      </div>
+    </div>
+    
+    <div class="form-options">
+      <label class="checkbox">
+        <input type="checkbox" id="rememberMe">
+        <span>Remember me for 30 days</span>
+      </label>
+      <a href="javascript:void(0)" onclick="forgotPassword()" class="text-link">Forgot password?</a>
+    </div>
+    
+    <button id="doLogin" class="btn btn-block">
+      <i class="fas fa-sign-in-alt"></i> Sign In
+    </button>
+    
+    <div class="form-footer">
+      <p>New to ShipSmart? <a href="javascript:void(0)" id="goRegister" class="text-link">Create an account</a></p>
+    </div>
+  </div>
+</div>
+
+ <!-- Complete Payment Modal with Recipient Section -->
+<div id="paymentModal" class="modal-wrap hidden">
+  <div class="modal-card" style="max-width: 600px;">
+    <button class="modal-close" onclick="closePaymentModal()">
+      <i class="fas fa-times"></i>
+    </button>
+    <h3>Complete Booking</h3>
+    
+    <!-- Recipient Information Section -->
+    <div class="recipient-info-section">
+      <h4><i class="fas fa-user-check"></i> Recipient Information</h4>
+      <div class="field">
+        <label for="recipientName"><i class="fas fa-user"></i> Recipient Full Name *</label>
+        <input type="text" id="recipientName" placeholder="Enter recipient's full name" required>
+      </div>
+      <div class="field">
+        <label for="recipientPhone"><i class="fas fa-phone"></i> Recipient Phone Number</label>
+        <input type="tel" id="recipientPhone" placeholder="Optional: recipient's phone number">
+      </div>
+    </div>
+
+    <div class="payment-summary">
+      <h4>Order Summary</h4>
+      <div class="summary-item">
+        <span>Shipping Cost:</span>
+        <span>₱<span id="shipping-amount">0.00</span></span>
+      </div>
+      <div class="summary-item hidden" id="cod-fee-item">
+        <span>COD Fee:</span>
+        <span>₱50.00</span>
+      </div>
+      <div class="summary-item total">
+        <span><strong>Total Amount:</strong></span>
+        <span><strong>₱<span id="total-amount">0.00</span></strong></span>
+      </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="payment-methods">
+      <div class="payment-method" onclick="selectPaymentMethod('cod')">
+        <div class="method-icon"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="method-info">
+          <strong>Cash on Delivery</strong>
+          <small>Pay when you receive your package</small>
+        </div>
+        <div class="method-check"><i class="fas fa-check"></i></div>
+      </div>
+      
+      <div class="payment-method" onclick="selectPaymentMethod('gcash')">
+        <div class="method-icon"><i class="fas fa-mobile-alt"></i></div>
+        <div class="method-info">
+          <strong>GCash</strong>
+          <small>Mobile payment</small>
+        </div>
+        <div class="method-check"><i class="fas fa-check"></i></div>
+      </div>
+    </div>
+
+    <!-- GCash Reference Number Input -->
+    <div id="gcash-reference-section" class="field hidden">
+      <label for="gcashReference"><i class="fas fa-receipt"></i> GCash Reference Number *</label>
+      <input type="text" id="gcashReference" placeholder="Enter GCash reference number" maxlength="13">
+      <small style="color: #666; font-size: 12px;">Enter the 13-digit reference number from your GCash payment</small>
+    </div>
+
+    <!-- Payment Instructions (Dynamic Content) -->
+    <div id="payment-instructions" class="payment-instructions">
+      <h4>Payment Instructions</h4>
+      <div id="instructions-content">
+        <p>Please select a payment method to continue.</p>
+      </div>
+    </div>
+
+    <!-- Confirm Payment Button -->
+    <div class="payment-confirm">
+      <button class="btn btn-primary" id="confirmPaymentBtn" onclick="confirmPayment()" style="width: 100%;" disabled>
+        <i class="fas fa-check-circle"></i> Confirm Booking & Payment
+      </button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
