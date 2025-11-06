@@ -3198,23 +3198,28 @@ hr {
 }
 /* Weather Forecast Styles (Refined Mobile) */
 .weather-forecast {
-  margin: 25px 0;
-  padding: 20px;
+  margin: 40px;
+  padding: 8px 0;
   background: #f4f4f7; /* Subtle background */
   border-radius: 12px;
   border-left: 4px solid var(--primary);
   /* Added full width on mobile */
   width: 100%; 
   box-sizing: border-box;
+  max-width: 900px; /* limit width for centered look */
+  margin-left: auto;
+  margin-right: auto;
+  transform: scale(0.9); /* scaled down slightly to fit */
+  transform-origin: top center;
 }
 
 .weather-forecast h3 {
-  margin-bottom: 15px;
+  margin-bottom: 6px;
   color: #1e293b;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.3rem; /* Adjusted for mobile readability */
+  gap: 8px;
+  font-size: 1.1rem; /* Adjusted for mobile readability */
   justify-content: center;
 }
 
@@ -3225,9 +3230,10 @@ hr {
 }
 
 /* Mobile Weather Card Collapse */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .weather-forecast {
-    padding: 15px; /* Reduced padding on small screens */
+    padding: 10px;
+    max-width: 95%; /* Reduced padding on small screens */
   }
   .weather-forecast h3 {
     font-size: 1.1rem;
@@ -3240,8 +3246,8 @@ hr {
 }
 
 .weather-card {
-  background: white;
-  padding: 20px;
+  background: rgb(25, 255, 255);
+  padding: 12px;
   border-radius: 10px;
   text-align: center;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -3263,7 +3269,7 @@ hr {
 }
 
 .weather-icon {
-  font-size: 40px;
+  font-size: 28px;
   margin-bottom: 10px;
   height: 60px;
   display: flex;
@@ -3272,7 +3278,7 @@ hr {
 }
 
 .weather-temp {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: bold;
   color: #1e293b;
   margin-bottom: 5px;
@@ -3442,12 +3448,18 @@ hr {
 }
 
 .hero {
-  position: relative;
-  background: #FFFFFF; /* Pure white */
-  color: var(--dark);
-  padding: 4rem 0;
-  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(180, 93, 207, 0.2), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.15), transparent 60%),
+    linear-gradient(135deg, #6A057F 0%, #B45DCF 100%);
+  color: white;
+  padding: 100px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+
 
 .hero-overlay {
   position: absolute;
